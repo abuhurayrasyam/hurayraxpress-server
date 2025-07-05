@@ -22,6 +22,15 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
+    const database = client.db("hurayra_xpress");
+    const parcels = database.collection("parcels");
+
+    app.post('/parcels', async(req, res) => {
+      const newParcel = req.body;
+      const result = await parcels.insertOne(newParcel);
+      res.status(201).send(result);
+    })
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
