@@ -116,6 +116,21 @@ async function run() {
         }
     });
 
+    app.get('/payments', async (req, res) => {
+        try {
+            const userEmail = req.query.email;
+
+            const query = userEmail ? { email: userEmail } : {};
+            const options = { sort: { paid_at: -1 } };
+
+            const payments = await paymentsCollection.find(query, options).toArray();
+            res.send(payments);
+        } catch (error) {
+            console.error('Error fetching payment history:', error);
+            res.status(500).send({ message: 'Failed to get payments' });
+        }
+    });
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
