@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -23,13 +23,32 @@ async function run() {
     // await client.connect();
 
     const database = client.db("hurayra_xpress");
-    const parcels = database.collection("parcels");
+    const parcelsCollection = database.collection("parcels");
 
     app.post('/parcels', async(req, res) => {
       const newParcel = req.body;
-      const result = await parcels.insertOne(newParcel);
+      const result = await parcelsCollection.insertOne(newParcel);
       res.status(201).send(result);
     })
+
+    app.get('/parcels', async (req, res) => {
+        const userEmail = req.query.email;
+
+        const query = userEmail ? { created_by: userEmail } : {};
+        const options = {
+            sort: { createdAt: -1 },
+        };
+
+        const parcels = await parcelsCollection.find(query, options).toArray();
+        res.send(parcels);
+    });
+
+    app.delete('/parcels/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)};
+        const result = await parcelsCollection.deleteOne(query);
+        res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
