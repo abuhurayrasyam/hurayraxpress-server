@@ -3,6 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('./cloudinaryConfig');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -18,14 +21,38 @@ const client = new MongoClient(process.env.MONGODB_URI, {
   }
 });
 
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'users-photos',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+  },
+});
+
+const upload = multer({ storage });
+
+app.post('/upload-image', upload.single('image'), (req, res) => {
+    if (!req.file || !req.file.path) {
+        return res.status(400).json({ message: 'Image upload failed' });
+    }
+    res.status(200).json({ imageUrl: req.file.path });
+});
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
     const database = client.db("hurayra_xpress");
+    const usersCollection = database.collection("users");
     const parcelsCollection = database.collection("parcels");
     const paymentsCollection = database.collection("payments");
+
+    app.post('/users', async(req, res) => {
+        const newUser = req.body;
+        const result = await usersCollection.insertOne(newUser);
+        res.status(201).send(result);
+    })
 
     app.post('/parcels', async(req, res) => {
       const newParcel = req.body;
@@ -140,7 +167,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
 
 app.get('/', (req, res) => {
   res.send('Welcome to HurayraXpress Server!')
