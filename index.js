@@ -159,6 +159,11 @@ async function run() {
         }
     });
 
+    app.get("/riders/active", async (req, res) => {
+        const result = await ridersCollection.find({ status: "active" }).toArray();
+        res.send(result);
+    });
+
     app.post('/payments', verifyFBToken, async (req, res) => {
         try {
             const { parcelId, email, amount, paymentMethod, transactionId } = req.body;
