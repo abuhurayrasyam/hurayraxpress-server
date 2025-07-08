@@ -123,7 +123,26 @@ async function run() {
         const rider = req.body;
         const result = await ridersCollection.insertOne(rider);
         res.send(result);
-    })
+    });
+
+    app.get("/riders/pending", async (req, res) => {
+        const pendingRiders = await ridersCollection.find({ status: "pending" }).toArray();
+        res.send(pendingRiders);
+    });
+
+    app.patch("/riders/:id/status", async (req, res) => {
+        const { id } = req.params;
+        const { status } = req.body;
+        const query = { _id: new ObjectId(id) }
+        const updateDoc = {
+            $set:
+            {
+                status
+            }
+        }
+        const result = await ridersCollection.updateOne( query, updateDoc);
+        res.send(result);
+    });
 
     app.post('/create-payment-intent', async (req, res) => {
         const amountInCents = req.body.amountInCents
