@@ -164,6 +164,11 @@ async function run() {
         res.send(result);
     });
 
+    app.get("/riders/deactivated", async (req, res) => {
+        const result = await ridersCollection.find({ status: "deactivated" }).toArray();
+        res.send(result);
+    });
+
     app.post('/payments', verifyFBToken, async (req, res) => {
         try {
             const { parcelId, email, amount, paymentMethod, transactionId } = req.body;
