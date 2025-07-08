@@ -55,6 +55,7 @@ async function run() {
     const usersCollection = database.collection("users");
     const parcelsCollection = database.collection("parcels");
     const paymentsCollection = database.collection("payments");
+    const ridersCollection = database.collection('riders');
 
     // custom middlewares
     const verifyFBToken = async (req, res, next) => {
@@ -117,6 +118,12 @@ async function run() {
         const result = await parcelsCollection.deleteOne(query);
         res.send(result);
     });
+
+    app.post('/riders', verifyFBToken, async (req, res) => {
+        const rider = req.body;
+        const result = await ridersCollection.insertOne(rider);
+        res.send(result);
+    })
 
     app.post('/create-payment-intent', async (req, res) => {
         const amountInCents = req.body.amountInCents
