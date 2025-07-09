@@ -125,12 +125,12 @@ async function run() {
         res.send(result);
     });
 
-    app.get("/riders/pending", async (req, res) => {
+    app.get("/riders/pending", verifyFBToken, async (req, res) => {
         const pendingRiders = await ridersCollection.find({ status: "pending" }).toArray();
         res.send(pendingRiders);
     });
 
-    app.patch("/riders/:id/status", async (req, res) => {
+    app.patch("/riders/:id/status", verifyFBToken, async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
         const query = { _id: new ObjectId(id) }
@@ -141,6 +141,16 @@ async function run() {
             }
         }
         const result = await ridersCollection.updateOne( query, updateDoc);
+        res.send(result);
+    });
+
+    app.get("/riders/active", verifyFBToken, async (req, res) => {
+        const result = await ridersCollection.find({ status: "active" }).toArray();
+        res.send(result);
+    });
+
+    app.get("/riders/deactivated", verifyFBToken, async (req, res) => {
+        const result = await ridersCollection.find({ status: "deactivated" }).toArray();
         res.send(result);
     });
 
@@ -157,16 +167,6 @@ async function run() {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
-    });
-
-    app.get("/riders/active", async (req, res) => {
-        const result = await ridersCollection.find({ status: "active" }).toArray();
-        res.send(result);
-    });
-
-    app.get("/riders/deactivated", async (req, res) => {
-        const result = await ridersCollection.find({ status: "deactivated" }).toArray();
-        res.send(result);
     });
 
     app.post('/payments', verifyFBToken, async (req, res) => {
