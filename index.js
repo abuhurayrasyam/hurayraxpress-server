@@ -132,7 +132,7 @@ async function run() {
 
     app.patch("/riders/:id/status", verifyFBToken, async (req, res) => {
         const { id } = req.params;
-        const { status } = req.body;
+        const { status, email } = req.body;
         const query = { _id: new ObjectId(id) }
         const updateDoc = {
             $set:
@@ -141,6 +141,18 @@ async function run() {
             }
         }
         const result = await ridersCollection.updateOne( query, updateDoc);
+
+        // Update user role to 'rider' in users collection when rider is marked as active
+        if (status === 'active') {
+            const userQuery = { email };
+            const userUpdateDoc = {
+                $set: {
+                    role: 'rider'
+                }
+            };
+            const roleResult = await usersCollection.updateOne(userQuery, userUpdateDoc)
+        }
+
         res.send(result);
     });
 
