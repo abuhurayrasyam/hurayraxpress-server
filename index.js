@@ -69,14 +69,9 @@ async function run() {
         }
 
         // verify the token
-        try {
-            const decoded = await admin.auth().verifyIdToken(token);
-            req.decoded = decoded;
-            next();
-        }
-        catch (error) {
-            return res.status(403).send({ message: 'forbidden access' })
-        }
+        const decoded = await admin.auth().verifyIdToken(token);
+        req.decoded = decoded;
+        next();
     }
 
     const verifyAdmin = async (req, res, next) => {
@@ -105,7 +100,7 @@ async function run() {
         res.send(users);
     });
 
-    app.get('/users/:email/role', async (req, res) => {
+    app.get('/users/:email/role', verifyFBToken, async (req, res) => {
         const email = req.params.email;
         if (!email) {
             return res.status(400).send({ message: 'Email is required' });
@@ -139,13 +134,20 @@ async function run() {
     })
 
     app.get('/parcels', verifyFBToken, async (req, res) => {
-        const userEmail = req.query.email;
-
-        const query = userEmail ? { created_by: userEmail } : {};
+        const { email, payment_status, delivery_status } = req.query;
+        let query = {}
+        if (email) {
+            query = { created_by: email }
+        }
+        if (payment_status) {
+            query.payment_status = payment_status
+        }
+        if (delivery_status) {
+            query.delivery_status = delivery_status
+        }
         const options = {
             sort: { createdAt: -1 },
         };
-
         const parcels = await parcelsCollection.find(query, options).toArray();
         res.send(parcels);
     });
@@ -157,6 +159,30 @@ async function run() {
             return res.status(404).send({ message: 'Parcel not found' });
         }
         res.send(parcel);
+    });
+
+    app.patch("/parcels/:id/assign", verifyFBToken, verifyAdmin, async (req, res) => {
+        const parcelId = req.params.id;
+        const { riderId, riderName } = req.body;
+        await parcelsCollection.updateOne(
+            { _id: new ObjectId(parcelId) },
+            {
+                $set: {
+                    delivery_status: "in_transit",
+                    assigned_rider_id: riderId,
+                    assigned_rider_name: riderName,
+                },
+            }
+        );
+        await ridersCollection.updateOne(
+            { _id: new ObjectId(riderId) },
+            {
+                $set: {
+                    work_status: "in_delivery",
+                },
+            }
+        );
+        res.send({ message: "Rider assigned" });
     });
 
     app.delete('/parcels/:id', verifyFBToken, async (req, res) => {
@@ -211,6 +237,17 @@ async function run() {
     app.get("/riders/deactivated", verifyFBToken, verifyAdmin, async (req, res) => {
         const result = await ridersCollection.find({ status: "deactivated" }).toArray();
         res.send(result);
+    });
+
+    app.get("/riders/available", verifyFBToken, verifyAdmin, async (req, res) => {
+        const { district } = req.query;
+        const riders = await ridersCollection
+            .find({
+                district,
+            })
+            .toArray();
+
+        res.send(riders);
     });
 
     app.post('/create-payment-intent', async (req, res) => {
