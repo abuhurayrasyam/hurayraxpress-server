@@ -85,6 +85,31 @@ async function run() {
         res.status(201).send(result);
     })
 
+    app.get("/users/search", verifyFBToken, async (req, res) => {
+        const emailQuery = req.query.email;
+        if (!emailQuery) {
+            return res.status(400).send({ message: "Missing email query" });
+        }
+        const regex = new RegExp(emailQuery, "i");
+        const users = await usersCollection.find({ email: { $regex: regex } }).limit(10).toArray();
+        res.send(users);
+    });
+
+    app.patch("/users/:id/role", verifyFBToken, async (req, res) => {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        if (!["admin", "user"].includes(role)) {
+            return res.status(400).send({ message: "Invalid role" });
+        }
+
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { role } }
+        );
+        res.send({ message: `User role updated to ${role}`, result });
+    });
+
     app.post('/parcels', verifyFBToken, async(req, res) => {
       const newParcel = req.body;
       const result = await parcelsCollection.insertOne(newParcel);
